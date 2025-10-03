@@ -1,3 +1,4 @@
+// index.js
 
 require('dotenv').config();
 const fs = require('fs');
@@ -5,6 +6,19 @@ const path = require('path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cron = require('node-cron');
+const express = require('express'); 
+
+const app = express();
+const port = process.env.PORT || 3000; 
+
+app.get('/', (req, res) => {
+  res.send('UUI-Chan is alive!');
+});
+
+app.listen(port, () => {
+  console.log(`✅ Server web mini berjalan di port ${port}`);
+});
+
 
 const client = new Client({
     intents: [
@@ -17,7 +31,6 @@ const client = new Client({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 client.geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" }); 
-
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
@@ -50,7 +63,7 @@ cron.schedule('0 8 * * 1', async () => {
     const channel = await client.channels.fetch(channelId);
 
     if (channel) {
-        channel.send("Selamat hari Senin, semuanya! Semoga harimu senin selalu ✨");
+        channel.send("Selamat hari Senin, semuanya! Semoga harimu senin selalu (semangat dan indah)! ✨");
         console.log(`Pesan hari Senin terkirim ke channel ${channel.name}`);
     } else {
         console.log(`Channel dengan ID ${channelId} tidak ditemukan.`);
