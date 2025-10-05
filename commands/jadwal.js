@@ -3,23 +3,23 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const jadwalKuliah = {
     0: "Minggu Libur! Saatnya rebahan.", // Minggu
     1: [ // Senin
-        { mk: 'Scenario dan Design Game', jam: '08:00 - 11:00', dosen: 'Desita Ria Yusian TB, S.ST.,MT' }
+        { mk: 'Scenario dan Design Game', jam: '08:00 - 11:00', dosen: 'Desita Ria Yusian TB, S.ST.,MT', klm: 'Ibuk' }
     ],
     2: [ // Selasa
-        { mk: 'Basis Data', jam: '14:00 - 17:00', dosen: 'M. Bayu Wibawa, S.Kom., MMSI.' }
+        { mk: 'Basis Data', jam: '14:00 - 17:00', dosen: 'M. Bayu Wibawa, S.Kom., MMSI.', klm: 'bapak' }
     ],
     3: [ // Rabu
-        { mk: 'Jaringan Komputer', jam: '08:00 - 12:00', dosen: 'Rizka Albar, S.Kom.,MT' },
-        { mk: 'Pemrograman Berorientasi Objek', jam: '14:00 - 18:00', dosen: 'Mahendar Dwi Payana, S.ST.,MT' }
+        { mk: 'Jaringan Komputer', jam: '08:00 - 12:00', dosen: 'Rizka Albar, S.Kom.,MT', klm: 'bapak' },
+        { mk: 'Pemrograman Berorientasi Objek', jam: '14:00 - 18:00', dosen: 'Mahendar Dwi Payana, S.ST.,MT', klm: 'bapak' }
     ],
     4: [ // Kamis
-        { mk: 'Leadership dan Entrepreneurship', jam: '08:00 - 11:00', dosen: 'Soraya Lestari, SE., M.Si' },
-        { mk: 'Database Management System', jam: '14:00 - 17:00', dosen: 'M. Bayu Wibawa, S.Kom.,MMSI' }
+        { mk: 'Leadership dan Entrepreneurship', jam: '08:00 - 11:00', dosen: 'Soraya Lestari, SE., M.Si', klm: 'Ibuk' },
+        { mk: 'Database Management System', jam: '14:00 - 17:00', dosen: 'M. Bayu Wibawa, S.Kom.,MMSI', klm: 'Bapak' }
     ],
     5: "Tidak ada jadwal hari ini. Semangat nugas!", // Jumat
     6: [ // Sabtu
-        { mk: 'Logika Matematika', jam: '10:00 - 13:00', dosen: 'Mahyus Ihsan, M.Si' },
-        { mk: 'Organisasi dan Arsitektur Komputer', jam: '14:00 - 16:00', dosen: 'Rizka Albar, S.Kom.,MT' }
+        { mk: 'Logika Matematika', jam: '10:00 - 13:00', dosen: 'Mahyus Ihsan, M.Si', klm: 'Bapak' },
+        { mk: 'Organisasi dan Arsitektur Komputer', jam: '14:00 - 16:00', dosen: 'Rizka Albar, S.Kom.,MT', klm: 'Bapak' }
     ]
 };
 // ---------------------------------
@@ -58,7 +58,7 @@ module.exports = {
         if (Array.isArray(jadwalTarget)) {
             deskripsiJadwal = jadwalTarget.map(kelas => {
                 const prediksiAcak = prediksiKehadiran[Math.floor(Math.random() * prediksiKehadiran.length)];
-                return `**${kelas.jam}**: **${kelas.mk}**\n> _Kayaknya ${kelas.dosen} besok... ${prediksiAcak}_`;
+                return `**${kelas.jam}**: **${kelas.mk}**\n> _Kayaknya ${kelas.klm} ${kelas.dosen} besok... ${prediksiAcak}_`;
             }).join('\n\n');
         } else {
             deskripsiJadwal = jadwalTarget;
