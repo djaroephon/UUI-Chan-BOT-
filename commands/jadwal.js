@@ -39,7 +39,7 @@ module.exports = {
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
-        const prediksiKehadiran = ['**MASUK** seperti biasa.', '**NGGAK MASUK**, kayaknya ada rapat.', '**NGGAK TAU MASUK APA GAK**, infonya simpang siur.'];
+        const prediksiKehadiran = ['**MASUK** seperti biasa.', '**NGGAK MASUK**, kayaknya ada rapat.', '**NGGAK TAU MASUK APA GAK**, blom ada Info.'];
         
         let targetDay;
         let embedTitle;
