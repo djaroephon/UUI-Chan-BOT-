@@ -27,28 +27,46 @@ const jadwalKuliah = {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('jadwal')
-        .setDescription('Menampilkan jadwal kuliah hari ini beserta ramalan kehadiran dosen.'),
+        .setDescription('Perintah terkait jadwal kuliah.')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('hari-ini')
+                .setDescription('Menampilkan jadwal kuliah untuk hari ini.'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('besok')
+                .setDescription('Menampilkan jadwal kuliah untuk besok.')),
 
     async execute(interaction) {
+        const subcommand = interaction.options.getSubcommand();
         const prediksiKehadiran = ['**MASUK** seperti biasa.', '**NGGAK MASUK**, kayaknya ada rapat.', '**NGGAK TAU MASUK APA GAK**, infonya simpang siur.'];
+        
+        let targetDay;
+        let embedTitle;
 
-        const hariIni = new Date().getDay();
-        const jadwalHariIni = jadwalKuliah[hariIni];
+        if (subcommand === 'hari-ini') {
+            targetDay = new Date().getDay();
+            embedTitle = '📚 Jadwal & Ramalan Dosen Hari Ini';
+        } else if (subcommand === 'besok') {
+            targetDay = (new Date().getDay() + 1) % 7; 
+            embedTitle = '📚 Jadwal & Ramalan Dosen Besok';
+        }
+
+        const jadwalTarget = jadwalKuliah[targetDay];
         let deskripsiJadwal = '';
 
-        if (Array.isArray(jadwalHariIni)) {
-            deskripsiJadwal = jadwalHariIni.map(kelas => {
+        if (Array.isArray(jadwalTarget)) {
+            deskripsiJadwal = jadwalTarget.map(kelas => {
                 const prediksiAcak = prediksiKehadiran[Math.floor(Math.random() * prediksiKehadiran.length)];
-                return `**${kelas.jam}**: **${kelas.mk}**\n> _Kayaknya ${kelas.dosen} hari ini... ${prediksiAcak}_`;
-            }).join('\n\n'); 
+                return `**${kelas.jam}**: **${kelas.mk}**\n> _Kayaknya ${kelas.dosen} besok... ${prediksiAcak}_`;
+            }).join('\n\n');
         } else {
-            // Jika libur atau tidak ada jadwal
-            deskripsiJadwal = jadwalHariIni;
+            deskripsiJadwal = jadwalTarget;
         }
 
         const jadwalEmbed = new EmbedBuilder()
-            .setColor(0x0099FF) // Biru
-            .setTitle('📚 Jadwal & Ramalan Dosen Hari Ini')
+            .setColor(0x0099FF)
+            .setTitle(embedTitle)
             .setDescription(deskripsiJadwal)
             .setFooter({ text: `Khusus untuk Komting & teman-teman!` })
             .setTimestamp();
