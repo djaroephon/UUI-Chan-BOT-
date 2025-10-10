@@ -29,7 +29,7 @@ const client = new Client({
 });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-client.geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" }); 
+client.geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); 
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
