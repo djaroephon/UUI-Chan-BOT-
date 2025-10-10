@@ -52,8 +52,18 @@ module.exports = {
             const result = await geminiModel.generateContent(finalPrompt);
             const response = await result.response;
             const text = response.text();
-
-            message.reply(text);
+            if (text.length > 2000) {
+                const chunks = text.match(/[\s\S]{1,2000}/g) || [];
+                for (let i = 0; i < chunks.length; i++) {
+                    if (i === 0) {
+                        await message.reply(chunks[i]);
+                    } else {
+                        await message.channel.send(chunks[i]);
+                    }
+                }
+            } else {
+                message.reply(text);
+            }
 
         } catch (error) {
             console.error('Error saat ngobrol dengan Gemini:', error);
