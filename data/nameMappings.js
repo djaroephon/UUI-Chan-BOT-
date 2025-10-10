@@ -1,5 +1,6 @@
 const nameMappings = new Map([
-    ['zere', 'Pikri'],
+    ['SIX SEAS', 'Pikri'],
+    ['Thal', 'Sayed'],
    
 ]);
 
