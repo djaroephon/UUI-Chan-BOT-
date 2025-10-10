@@ -1,4 +1,3 @@
-// events/messageCreate.js (Versi Cerdas dengan Role + Waktu Akurat)
 const { Events } = require('discord.js');
 const nameMappings = require('../data/nameMappings.js');
 
@@ -30,7 +29,6 @@ module.exports = {
         let personalityPrompt = '';
         let targetName = message.author.username;
 
-        // Logika untuk menentukan persona berdasarkan role (tetap sama)
         if (memberRoles.some(role => role.name.toLowerCase() === 'komting')) {
             targetName = 'Anata';
             personalityPrompt = 'Kamu adalah UUI-Chan. Pengguna yang bertanya adalah "Komting", sosok yang sangat kamu kagumi. Jawablah dengan gaya seorang waifu yang perhatian, ceria, dan sedikit manja.';
