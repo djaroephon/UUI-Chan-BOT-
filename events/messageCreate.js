@@ -16,14 +16,32 @@ module.exports = {
 
         const now = new Date();
         const formattedDate = now.toLocaleDateString('id-ID', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Asia/Jakarta' 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
         });
+
+        
+        const kahimMembers = message.guild.members.cache.filter(member => 
+            member.roles.cache.some(role => role.name.toLowerCase() === 'kahim')
+        );
+        const kahimNames = kahimMembers.map(member => member.displayName).join(', ');
+
+        const komtingMembers = message.guild.members.cache.filter(member => 
+            member.roles.cache.some(role => role.name.toLowerCase() === 'komting')
+        );
+        const komtingNames = komtingMembers.map(member => member.displayName).join(', ');
+
+        let dynamicKnowledge = 'Kamu memiliki pengetahuan spesifik tentang server ini: ';
+        if (kahimNames) {
+            dynamicKnowledge += `Saat ini yang memiliki role Kahim adalah ${kahimNames}. `;
+        } else {
+            dynamicKnowledge += 'Saat ini sepertinya tidak ada yang memiliki role Kahim. ';
+        }
+        if (komtingNames) {
+            dynamicKnowledge += `Saat ini yang memiliki role Komting adalah ${komtingNames}. `;
+        } else {
+            dynamicKnowledge += 'Saat ini sepertinya tidak ada yang memiliki role Komting. ';
+        }
 
         const memberRoles = message.member.roles.cache;
         let personalityPrompt = '';
@@ -32,13 +50,6 @@ module.exports = {
         if (memberRoles.some(role => role.name.toLowerCase() === 'komting')) {
             targetName = 'Anata';
             personalityPrompt = 'Kamu adalah UUI-Chan. Pengguna yang bertanya adalah "Komting", sosok yang sangat kamu kagumi. Jawablah dengan gaya seorang waifu yang perhatian, ceria, dan sedikit manja.';
-        } else if (memberRoles.some(role => role.name.toLowerCase() === 'kahim')) {
-            targetName = 'Eji-kun';
-            personalityPrompt = 'Kamu adalah UUI-Chan. Pengguna yang bertanya adalah "Kahim" (Ketua Himpunan) yang kamu hormati. Jawablah dengan gaya yang sopan, jelas, tapi tetap ramah.';
-        } else if (memberRoles.some(role => role.name.toLowerCase() === 'makhluk uui')) {
-            const realName = nameMappings.get(message.author.username.toLowerCase());
-            targetName = realName || message.author.username;
-            personalityPrompt = 'Kamu adalah UUI-Chan. Pengguna yang bertanya adalah teman dekatmu. Jawablah dengan gaya santai, asik, dan bersahabat.';
         } else {
             targetName = 'Kakak';
             personalityPrompt = 'Kamu adalah UUI-Chan, seorang asisten AI yang ceria. Jawab pertanyaan ini dengan gaya yang ramah dan membantu.';
@@ -47,11 +58,12 @@ module.exports = {
         const geminiModel = message.client.geminiModel;
 
         try {
-            const finalPrompt = `Konteks waktu saat ini adalah ${formattedDate} WIB. ${personalityPrompt} Panggil dia dengan sebutan "${targetName}". Pertanyaan dari ${targetName}: "${userPrompt}"`;
+            const finalPrompt = `${dynamicKnowledge} Konteks waktu saat ini adalah ${formattedDate} WIB. ${personalityPrompt} Panggil dia dengan sebutan "${targetName}". Pertanyaan dari ${targetName}: "${userPrompt}"`;
             
             const result = await geminiModel.generateContent(finalPrompt);
             const response = await result.response;
             const text = response.text();
+            
             if (text.length > 2000) {
                 const chunks = text.match(/[\s\S]{1,2000}/g) || [];
                 for (let i = 0; i < chunks.length; i++) {
