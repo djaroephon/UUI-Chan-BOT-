@@ -24,7 +24,8 @@ module.exports = {
         const kahimMembers = message.guild.members.cache.filter(member => 
             member.roles.cache.some(role => role.name.toLowerCase() === 'kahim')
         );
-        const kahimNames = kahimMembers.map(member => member.displayName).join(', ');
+
+        const kahimNames = 'Eji-Kun';
 
         const komtingMembers = message.guild.members.cache.filter(member => 
             member.roles.cache.some(role => role.name.toLowerCase() === 'komting')
