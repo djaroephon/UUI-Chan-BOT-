@@ -1,5 +1,5 @@
 const nameMappings = new Map([
-    ['sixseas0547_73227', 'Pikri'],
+    ['SIX SEAS', 'Pikri'],
     ['athal03', 'Sayed'],
    
 ]);
