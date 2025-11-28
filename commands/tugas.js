@@ -1,0 +1,103 @@
+// commands/tugas.js
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+
+// Lokasi file penyimpanan database tugas
+const dataPath = path.join(__dirname, '..', 'data', 'tugas.json');
+
+// Fungsi helper untuk membaca/menulis data
+function loadData() {
+    if (!fs.existsSync(dataPath)) return [];
+    try {
+        return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveData(data) {
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+}
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('tugas')
+        .setDescription('Manajemen tugas kuliah (biar gak lupa!).')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('tambah')
+                .setDescription('Tambah tugas baru.')
+                .addStringOption(option => option.setName('matkul').setDescription('Nama Mata Kuliah').setRequired(true))
+                .addStringOption(option => option.setName('deadline').setDescription('Kapan kumpul? (Contoh: Senin depan)').setRequired(true))
+                .addStringOption(option => option.setName('deskripsi').setDescription('Detail tugasnya apa?').setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('lihat')
+                .setDescription('Lihat daftar tugas yang belum selesai.'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('hapus')
+                .setDescription('Hapus tugas yang sudah selesai.')
+                .addIntegerOption(option => option.setName('id').setDescription('Nomor ID tugas yang mau dihapus').setRequired(true))),
+
+    async execute(interaction) {
+        const subcommand = interaction.options.getSubcommand();
+        let tugasList = loadData();
+
+        if (subcommand === 'tambah') {
+            const matkul = interaction.options.getString('matkul');
+            const deadline = interaction.options.getString('deadline');
+            const deskripsi = interaction.options.getString('deskripsi');
+            
+            // Buat ID sederhana (ambil ID terakhir + 1)
+            const newId = tugasList.length > 0 ? Math.max(...tugasList.map(t => t.id)) + 1 : 1;
+
+            const newTugas = {
+                id: newId,
+                matkul,
+                deadline,
+                deskripsi,
+                addedBy: interaction.user.username
+            };
+
+            tugasList.push(newTugas);
+            saveData(tugasList);
+
+            await interaction.reply(`✅ **Siap!** Tugas **${matkul}** berhasil dicatat dengan ID **${newId}**. Jangan ditunda-tunda ya ngerjainnya!`);
+
+        } else if (subcommand === 'lihat') {
+            if (tugasList.length === 0) {
+                return interaction.reply('🎉 **Asik!** Belum ada tugas yang tercatat. Nikmati kebebasanmu!');
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor(0xFFA500) // Oranye
+                .setTitle('📝 Daftar Tugas Kuliah')
+                .setDescription('Ayo dikerjain, jangan nunggu deadline mepet!')
+                .setTimestamp();
+
+            tugasList.forEach(t => {
+                embed.addFields({
+                    name: `[ID: ${t.id}] ${t.matkul}`,
+                    value: `📅 **Deadline:** ${t.deadline}\nℹ️ **Ket:** ${t.deskripsi}\n👤 *Ditambah oleh: ${t.addedBy}*`
+                });
+            });
+
+            await interaction.reply({ embeds: [embed] });
+
+        } else if (subcommand === 'hapus') {
+            const idToDelete = interaction.options.getInteger('id');
+            const index = tugasList.findIndex(t => t.id === idToDelete);
+
+            if (index === -1) {
+                return interaction.reply({ content: `❌ Tugas dengan ID **${idToDelete}** tidak ditemukan. Cek lagi pakai \`/tugas lihat\`.`, ephemeral: true });
+            }
+
+            const deletedTask = tugasList.splice(index, 1)[0];
+            saveData(tugasList);
+
+            await interaction.reply(`🗑️ **Mantap!** Tugas **${deletedTask.matkul}** (ID: ${idToDelete}) sudah dihapus. Satu beban hidup berkurang!`);
+        }
+    },
+};
