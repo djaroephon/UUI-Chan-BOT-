@@ -3,25 +3,19 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
-// Tentukan path folder dan file secara terpisah
 const dataDir = path.join(__dirname, '..', 'data');
 const dataPath = path.join(dataDir, 'tugas.json');
 
-// --- PERBAIKAN PENTING: Fungsi memastikan folder & file ada ---
 function ensureDataExists() {
-    // 1. Cek apakah folder 'data' ada, jika tidak, buat baru
     if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
     }
-    // 2. Cek apakah file 'tugas.json' ada, jika tidak, buat file dengan array kosong
     if (!fs.existsSync(dataPath)) {
         fs.writeFileSync(dataPath, JSON.stringify([], null, 2));
     }
 }
-
-// Fungsi membaca data
 function loadData() {
-    ensureDataExists(); // Pastikan file ada sebelum dibaca
+    ensureDataExists(); 
     try {
         const rawData = fs.readFileSync(dataPath, 'utf8');
         return JSON.parse(rawData);
@@ -30,9 +24,8 @@ function loadData() {
     }
 }
 
-// Fungsi menyimpan data
 function saveData(data) {
-    ensureDataExists(); // Pastikan folder ada sebelum ditulis
+    ensureDataExists(); 
     fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 }
 
