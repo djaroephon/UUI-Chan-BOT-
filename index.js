@@ -74,4 +74,46 @@ cron.schedule('0 8 * * 1', async () => {
 
 console.log('✅ Penjadwal pesan hari Senin sudah aktif.');
 
+cron.schedule('0 7 * * *', async () => {
+    const channelId = '1420339591315197964'; 
+    const tugasPath = path.join(__dirname, 'data', 'tugas.json');
+    if (!fs.existsSync(tugasPath)) return;
+
+    try {
+        const rawData = fs.readFileSync(tugasPath, 'utf8');
+        const tugasList = JSON.parse(rawData);
+
+        // 3. Jika ada tugas, kirim pengingat
+        if (tugasList.length > 0) {
+            const channel = await client.channels.fetch(channelId);
+            
+            if (channel) {
+                // Buat Embed Daftar Tugas
+                const { EmbedBuilder } = require('discord.js');
+                const embed = new EmbedBuilder()
+                    .setColor(0xFFA500) // Oranye warning
+                    .setTitle('🔔 PENGINGAT TUGAS HARIAN')
+                    .setDescription('Selamat pagi! UUI-Chan cuma mau ingetin tugas yang belum kelar nih. Jangan ditumpuk ya! 😤')
+                    .setThumbnail('https://i.imgur.com/HpF4hR7.png') // Opsional: Ikon alarm/jam
+                    .setTimestamp();
+
+                tugasList.forEach(t => {
+                    embed.addFields({
+                        name: `[ID: ${t.id}] ${t.matkul}`,
+                        value: `📅 Deadline: **${t.deadline}**\nℹ️ Ket: ${t.deskripsi}`
+                    });
+                });
+
+                channel.send({ content: '@here Yuk semangat ngerjain tugasnya!', embeds: [embed] });
+                console.log('✅ Pengingat tugas harian terkirim.');
+            }
+        }
+    } catch (error) {
+        console.error('Gagal mengirim pengingat tugas:', error);
+    }
+}, {
+    scheduled: true,
+    timezone: "Asia/Jakarta"
+});
+
 client.login(process.env.DISCORD_TOKEN);
