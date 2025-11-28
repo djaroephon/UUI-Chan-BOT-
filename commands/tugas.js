@@ -1,9 +1,7 @@
-// commands/tugas.js
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
-// Lokasi file penyimpanan database tugas
 const dataPath = path.join(__dirname, '..', 'data', 'tugas.json');
 
 // Fungsi helper untuk membaca/menulis data
