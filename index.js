@@ -5,8 +5,11 @@ const path = require('path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cron = require('node-cron');
-const express = require('express'); 
+const express = require('express');
+const mongoose = require('mongoose');
 
+
+const Tugas = require('./models/tugasModel');
 const app = express();
 const port = process.env.PORT || 3000; 
 
@@ -27,6 +30,10 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
     ]
 });
+
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Berhasil terhubung ke MongoDB!'))
+    .catch((err) => console.error('Gagal konek ke MongoDB:', err));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 client.geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); 
