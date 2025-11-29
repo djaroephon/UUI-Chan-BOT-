@@ -5,7 +5,7 @@ const Tugas = require('../models/tugasModel');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('tugas')
-        .setDescription('Manajemen tugas kuliah (Data Aman di Database!).')
+        .setDescription('Manajemen tugas kuliah.')
         .addSubcommand(subcommand =>
             subcommand
                 .setName('tambah')
@@ -64,8 +64,8 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor(0xFFA500)
-                .setTitle('📝 Daftar Tugas Kuliah (MongoDB)')
-                .setDescription('Data ini aman permanen!')
+                .setTitle('📝 Daftar Tugas Kuliah ')
+                .setDescription('Wajib Buat')
                 .setTimestamp();
 
             tugasList.forEach(t => {
