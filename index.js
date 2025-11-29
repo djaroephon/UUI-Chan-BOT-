@@ -81,46 +81,38 @@ cron.schedule('0 8 * * 1', async () => {
 
 console.log('✅ Penjadwal pesan hari Senin sudah aktif.');
 
+cron.schedule('0 8 * * 1', async () => {
+    const channelId = process.env.CHANNEL_WELCOME; 
+    const channel = await client.channels.fetch(channelId);
+    if (channel) channel.send("Selamat hari Senin! Semangat kuliahnya ya! ✨");
+}, { scheduled: true, timezone: "Asia/Jakarta" });
+
 cron.schedule('0 7 * * *', async () => {
-    const channelId = '1420339591315197964'; 
-    const tugasPath = path.join(__dirname, 'data', 'tugas.json');
-    if (!fs.existsSync(tugasPath)) return;
-
+    const channelId = process.env.CHANNEL_WELCOME  ;
     try {
-        const rawData = fs.readFileSync(tugasPath, 'utf8');
-        const tugasList = JSON.parse(rawData);
+        const tugasList = await Tugas.find().sort({ tugasId: 1 });
 
-        // 3. Jika ada tugas, kirim pengingat
         if (tugasList.length > 0) {
             const channel = await client.channels.fetch(channelId);
-            
             if (channel) {
-                // Buat Embed Daftar Tugas
-                const { EmbedBuilder } = require('discord.js');
                 const embed = new EmbedBuilder()
-                    .setColor(0xFFA500) // Oranye warning
+                    .setColor(0xFFA500)
                     .setTitle('🔔 PENGINGAT TUGAS HARIAN')
-                    .setDescription('Selamat pagi! UUI-Chan cuma mau ingetin tugas yang belum kelar nih. Jangan ditumpuk ya! 😤')
-                    .setThumbnail('https://i.imgur.com/HpF4hR7.png') // Opsional: Ikon alarm/jam
+                    .setDescription('Selamat pagi! Jangan lupa kerjain tugas ini ya:')
                     .setTimestamp();
 
                 tugasList.forEach(t => {
                     embed.addFields({
-                        name: `[ID: ${t.id}] ${t.matkul}`,
+                        name: `[ID: ${t.tugasId}] ${t.matkul}`,
                         value: `📅 Deadline: **${t.deadline}**\nℹ️ Ket: ${t.deskripsi}`
                     });
                 });
-
-                channel.send({ content: '@here Yuk semangat ngerjain tugasnya!', embeds: [embed] });
-                console.log('✅ Pengingat tugas harian terkirim.');
+                channel.send({ content: '@here Yuk semangat!', embeds: [embed] });
             }
         }
     } catch (error) {
-        console.error('Gagal mengirim pengingat tugas:', error);
+        console.error('Gagal mengirim pengingat:', error);
     }
-}, {
-    scheduled: true,
-    timezone: "Asia/Jakarta"
-});
+}, { scheduled: true, timezone: "Asia/Jakarta" });
 
 client.login(process.env.DISCORD_TOKEN);
