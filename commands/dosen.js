@@ -1,4 +1,3 @@
-// commands/dosen.js
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Dosen = require('../models/dosenModel');
 
@@ -7,13 +6,11 @@ module.exports = {
         .setName('dosen')
         .setDescription('Manajemen kontak Dosen & Generator Pesan WA.')
         
-        // --- FITUR 1: LIST DOSEN (SEMUA ORANG BISA) ---
         .addSubcommand(subcommand =>
             subcommand
                 .setName('list')
                 .setDescription('Lihat semua daftar dosen dan nomor HP.'))
 
-        // --- FITUR 2: INGATKAN DOSEN (SEKARANG KHUSUS KOMTING) ---
         .addSubcommand(subcommand =>
             subcommand
                 .setName('ingatkan')
@@ -39,7 +36,6 @@ module.exports = {
                         .setDescription('Nama kamu (Kosongkan jika ingin pakai default Djaroephon)')
                         .setRequired(false)))
 
-        // --- FITUR 3: TAMBAH DATA (KHUSUS KOMTING) ---
         .addSubcommand(subcommand =>
             subcommand
                 .setName('tambah')
@@ -56,7 +52,6 @@ module.exports = {
                         ))
                 .addStringOption(option => option.setName('matkul').setDescription('Matkul apa?').setRequired(true)))
 
-        // --- FITUR 4: HAPUS DATA (KHUSUS KOMTING) ---
         .addSubcommand(subcommand =>
             subcommand
                 .setName('hapus')
@@ -66,13 +61,11 @@ module.exports = {
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
         
-        // --- CEK ROLE (ANTI TYPO / CASE INSENSITIVE) ---
         const allowedRoleName = 'komting'; 
         const hasPermission = interaction.member.roles.cache.some(role => 
             role.name.toLowerCase() === allowedRoleName.toLowerCase()
         );
 
-        // --- LOGIKA: LIST DOSEN (PUBLIC - SIAPA AJA BOLEH) ---
         if (subcommand === 'list') {
             await interaction.deferReply(); 
 
@@ -100,9 +93,7 @@ module.exports = {
 
             await interaction.editReply({ embeds: [embed] });
 
-        // --- LOGIKA: INGATKAN DOSEN (RESTRICTED - KHUSUS KOMTING) ---
         } else if (subcommand === 'ingatkan') {
-            // Cek Izin Dulu!
             if (!hasPermission) {
                 return interaction.reply({ content: '⛔ Eits! Cuma Komting yang boleh generate pesan ke Dosen.', ephemeral: true });
             }
@@ -118,7 +109,7 @@ module.exports = {
             const dosen = await Dosen.findOne({ nama: { $regex: keyword, $options: 'i' } });
 
             if (!dosen) {
-                return interaction.reply(`❌ Data Pak/Bu **${keyword}** tidak ditemukan.`);
+                return interaction.reply({ content: `❌ Data Pak/Bu **${keyword}** tidak ditemukan.`, ephemeral: true });
             }
 
             const templatePesan = `Assalamualaikum Wr.Wb.
@@ -144,9 +135,8 @@ Wassalamu'alaikum wr.wb`;
                     value: `👉 **[BUKA WHATSAPP SEKARANG](${waLink})**` 
                 });
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed], ephemeral: true });
 
-        // --- LOGIKA: TAMBAH DATA (RESTRICTED - KHUSUS KOMTING) ---
         } else if (subcommand === 'tambah') {
             if (!hasPermission) {
                 return interaction.reply({ content: '⛔ Khusus Komting ya!', ephemeral: true });
@@ -166,10 +156,9 @@ Wassalamu'alaikum wr.wb`;
                 await interaction.reply(`✅ **Sukses!** Data **${panggilan} ${nama}** (MK: ${matkul}) berhasil disimpan.`);
             } catch (error) {
                 console.error(error);
-                await interaction.reply('❌ Gagal menyimpan. Pastikan datanya belum ada.');
+                await interaction.reply({ content: '❌ Gagal menyimpan. Pastikan datanya belum ada.' });
             }
 
-        // --- LOGIKA: HAPUS DATA (RESTRICTED - KHUSUS KOMTING) ---
         } else if (subcommand === 'hapus') {
             if (!hasPermission) {
                 return interaction.reply({ content: '⛔ Khusus Komting ya!', ephemeral: true });
