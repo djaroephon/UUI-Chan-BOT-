@@ -35,7 +35,7 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('tambah')
-                .setDescription('Simpan data dosen baru (Khusus Komting).')
+                .setDescription('Simpan data dosen baru (Khusus komting).')
                 .addStringOption(option => option.setName('nama').setDescription('Nama Dosen').setRequired(true))
                 .addStringOption(option => option.setName('nomor').setDescription('Nomor WA (08...)').setRequired(true))
                 .addStringOption(option => 
@@ -56,7 +56,15 @@ module.exports = {
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
-        const allowedRoleName = 'komting'; // Ganti sesuai role di servermu
+        
+        // --- PERBAIKAN LOGIKA ROLE (PENTING) ---
+        const allowedRoleName = 'komting'; // Nama role yang diinginkan
+
+        // Cek role tanpa peduli huruf besar/kecil (Case Insensitive)
+        // Jadi "Komting", "komting", "KOMTING" dianggap sama.
+        const hasPermission = interaction.member.roles.cache.some(role => 
+            role.name.toLowerCase() === allowedRoleName.toLowerCase()
+        );
 
         // --- LOGIKA: INGATKAN DOSEN (GENERATE WA) ---
         if (subcommand === 'ingatkan') {
@@ -103,9 +111,11 @@ Wassalamu'alaikum wr.wb`;
 
             await interaction.reply({ embeds: [embed] });
 
+        // --- LOGIKA: TAMBAH DATA ---
         } else if (subcommand === 'tambah') {
-            if (!interaction.member.roles.cache.some(role => role.name === allowedRoleName)) {
-                return interaction.reply({ content: '⛔ Khusus Komting ya!', ephemeral: true });
+            // Cek Izin pakai variabel hasPermission yang baru
+            if (!hasPermission) {
+                return interaction.reply({ content: '⛔ Khusus Komting ya! (Pastikan kamu punya role "komting")', ephemeral: true });
             }
 
             const nama = interaction.options.getString('nama');
@@ -125,8 +135,10 @@ Wassalamu'alaikum wr.wb`;
                 await interaction.reply('❌ Gagal menyimpan. Pastikan datanya belum ada.');
             }
 
+        // --- LOGIKA: HAPUS DATA ---
         } else if (subcommand === 'hapus') {
-            if (!interaction.member.roles.cache.some(role => role.name === allowedRoleName)) {
+            // Cek Izin pakai variabel hasPermission yang baru
+            if (!hasPermission) {
                 return interaction.reply({ content: '⛔ Khusus Komting ya!', ephemeral: true });
             }
 
