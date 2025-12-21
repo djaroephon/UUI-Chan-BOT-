@@ -56,7 +56,7 @@ module.exports = {
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
-        const allowedRoleName = 'Komting'; // Ganti sesuai role di servermu
+        const allowedRoleName = 'komting'; // Ganti sesuai role di servermu
 
         // --- LOGIKA: INGATKAN DOSEN (GENERATE WA) ---
         if (subcommand === 'ingatkan') {
