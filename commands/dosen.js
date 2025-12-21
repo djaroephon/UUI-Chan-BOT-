@@ -6,11 +6,18 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('dosen')
         .setDescription('Manajemen kontak Dosen & Generator Pesan WA.')
-        // --- FITUR 1: INGATKAN DOSEN (TEMPLATE WA) ---
+        
+        // --- FITUR 1: LIST DOSEN (SEMUA ORANG BISA) ---
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('list')
+                .setDescription('Lihat semua daftar dosen dan nomor HP.'))
+
+        // --- FITUR 2: INGATKAN DOSEN (SEKARANG KHUSUS KOMTING) ---
         .addSubcommand(subcommand =>
             subcommand
                 .setName('ingatkan')
-                .setDescription('Buat template chat WA pengingat kuliah.')
+                .setDescription('Buat template chat WA (Khusus Komting).')
                 .addStringOption(option => 
                     option.setName('nama')
                         .setDescription('Nama dosennya siapa?')
@@ -31,11 +38,12 @@ module.exports = {
                     option.setName('pengirim')
                         .setDescription('Nama kamu (Kosongkan jika ingin pakai default Djaroephon)')
                         .setRequired(false)))
-        // --- FITUR 2: TAMBAH DATA (KHUSUS KOMTING) ---
+
+        // --- FITUR 3: TAMBAH DATA (KHUSUS KOMTING) ---
         .addSubcommand(subcommand =>
             subcommand
                 .setName('tambah')
-                .setDescription('Simpan data dosen baru (Khusus komting).')
+                .setDescription('Simpan data dosen baru (Khusus Komting).')
                 .addStringOption(option => option.setName('nama').setDescription('Nama Dosen').setRequired(true))
                 .addStringOption(option => option.setName('nomor').setDescription('Nomor WA (08...)').setRequired(true))
                 .addStringOption(option => 
@@ -47,44 +55,72 @@ module.exports = {
                             { name: 'Ibu', value: 'Ibu' }
                         ))
                 .addStringOption(option => option.setName('matkul').setDescription('Matkul apa?').setRequired(true)))
-        // --- FITUR 3: HAPUS DATA ---
+
+        // --- FITUR 4: HAPUS DATA (KHUSUS KOMTING) ---
         .addSubcommand(subcommand =>
             subcommand
                 .setName('hapus')
-                .setDescription('Hapus data dosen.')
+                .setDescription('Hapus data dosen (Khusus Komting).')
                 .addStringOption(option => option.setName('nama').setDescription('Nama dosen').setRequired(true))),
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
         
-        // --- PERBAIKAN LOGIKA ROLE (PENTING) ---
-        const allowedRoleName = 'komting'; // Nama role yang diinginkan
-
-        // Cek role tanpa peduli huruf besar/kecil (Case Insensitive)
-        // Jadi "Komting", "komting", "KOMTING" dianggap sama.
+        // --- CEK ROLE (ANTI TYPO / CASE INSENSITIVE) ---
+        const allowedRoleName = 'komting'; 
         const hasPermission = interaction.member.roles.cache.some(role => 
             role.name.toLowerCase() === allowedRoleName.toLowerCase()
         );
 
-        // --- LOGIKA: INGATKAN DOSEN (GENERATE WA) ---
-        if (subcommand === 'ingatkan') {
+        // --- LOGIKA: LIST DOSEN (PUBLIC - SIAPA AJA BOLEH) ---
+        if (subcommand === 'list') {
+            await interaction.deferReply(); 
+
+            const semuaDosen = await Dosen.find().sort({ nama: 1 });
+
+            if (semuaDosen.length === 0) {
+                return interaction.editReply('📭 Database dosen masih kosong. Minta Komting isi dulu!');
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor(0x0099FF)
+                .setTitle('📚 Buku Telepon Dosen')
+                .setDescription('Berikut daftar kontak dosen yang tersimpan:')
+                .setTimestamp()
+                .setFooter({ text: 'Gunakan dengan bijak ya!' });
+
+            semuaDosen.forEach(d => {
+                const waLink = `https://wa.me/${d.nomor}`;
+                embed.addFields({
+                    name: `${d.panggilan} ${d.nama}`,
+                    value: `📘 MK: **${d.matkul}**\n📞 WA: [${d.nomor}](${waLink})`,
+                    inline: true 
+                });
+            });
+
+            await interaction.editReply({ embeds: [embed] });
+
+        // --- LOGIKA: INGATKAN DOSEN (RESTRICTED - KHUSUS KOMTING) ---
+        } else if (subcommand === 'ingatkan') {
+            // Cek Izin Dulu!
+            if (!hasPermission) {
+                return interaction.reply({ content: '⛔ Eits! Cuma Komting yang boleh generate pesan ke Dosen.', ephemeral: true });
+            }
+
             const keyword = interaction.options.getString('nama');
             const kapan = interaction.options.getString('kapan');
             const jam = interaction.options.getString('jam');
             
-            // Default nama pengirim sesuai request kamu
             const defaultPengirim = "Djaroephon Djohan Syuhada";
             const pengirimInput = interaction.options.getString('pengirim');
             const namaPengirim = pengirimInput || defaultPengirim;
 
-            // Cari data dosen di database
             const dosen = await Dosen.findOne({ nama: { $regex: keyword, $options: 'i' } });
 
             if (!dosen) {
-                return interaction.reply(`❌ Data Pak/Bu **${keyword}** tidak ditemukan. Tambahkan dulu pakai \`/dosen tambah\`.`);
+                return interaction.reply(`❌ Data Pak/Bu **${keyword}** tidak ditemukan.`);
             }
 
-            // TEMPLATE PESAN WA (Sesuai Request)
             const templatePesan = `Assalamualaikum Wr.Wb.
 
 Saya ${namaPengirim}, Mahasiswa Informatika letting 24.
@@ -106,21 +142,19 @@ Wassalamu'alaikum wr.wb`;
                 .addFields({ 
                     name: '👇 KLIK TOMBOL DI BAWAH', 
                     value: `👉 **[BUKA WHATSAPP SEKARANG](${waLink})**` 
-                })
-                .setFooter({ text: 'Tinggal klik, gak perlu ngetik ulang!' });
+                });
 
             await interaction.reply({ embeds: [embed] });
 
-        // --- LOGIKA: TAMBAH DATA ---
+        // --- LOGIKA: TAMBAH DATA (RESTRICTED - KHUSUS KOMTING) ---
         } else if (subcommand === 'tambah') {
-            // Cek Izin pakai variabel hasPermission yang baru
             if (!hasPermission) {
-                return interaction.reply({ content: '⛔ Khusus Komting ya! (Pastikan kamu punya role "komting")', ephemeral: true });
+                return interaction.reply({ content: '⛔ Khusus Komting ya!', ephemeral: true });
             }
 
             const nama = interaction.options.getString('nama');
             const nomorRaw = interaction.options.getString('nomor');
-            const panggilan = interaction.options.getString('panggilan'); // Bapak/Ibu
+            const panggilan = interaction.options.getString('panggilan');
             const matkul = interaction.options.getString('matkul');
 
             let cleanNomor = nomorRaw.replace(/\D/g, ''); 
@@ -135,9 +169,8 @@ Wassalamu'alaikum wr.wb`;
                 await interaction.reply('❌ Gagal menyimpan. Pastikan datanya belum ada.');
             }
 
-        // --- LOGIKA: HAPUS DATA ---
+        // --- LOGIKA: HAPUS DATA (RESTRICTED - KHUSUS KOMTING) ---
         } else if (subcommand === 'hapus') {
-            // Cek Izin pakai variabel hasPermission yang baru
             if (!hasPermission) {
                 return interaction.reply({ content: '⛔ Khusus Komting ya!', ephemeral: true });
             }
