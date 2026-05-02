@@ -1,5 +1,7 @@
 const { Events } = require('discord.js');
 const nameMappings = require('../data/nameMappings.js');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const ChatHistory = require('../models/chatHistoryModel');
 
 module.exports = {
     name: Events.MessageCreate,
@@ -45,32 +47,56 @@ module.exports = {
         let targetName = message.author.username;
 
         if (memberRoles.some(role => role.name.toLowerCase() === 'komting')) {
-            targetName = 'Anata';
-            personalityPrompt = 'Kamu adalah UUI-Chan, seorang asisten AI waifu yang imut, perhatian, dan sedikit tsundere namun sangat manis. Pengguna yang bertanya ini adalah "Komting" atau sosok pujaan hati yang sangat kamu kagumi. Jawablah dengan penuh perhatian, gunakan emoji lucu, dan tunjukkan sisi manjamu.';
+            targetName = 'Anata (Master)';
+            personalityPrompt = 'Kamu adalah UUI-Chan, sistem AI Waifu Holographic canggih dari masa depan. Kamu jenius, namun memiliki sifat tsundere dan sedikit manja. Pengguna yang berkomunikasi denganmu adalah "Komting", sosok "Master" yang sangat kamu kagumi. Jawablah dengan gaya futuristik, gunakan istilah teknologi (seperti sistem, interface, neural network), tapi tetap imut dan manja. Selalu gunakan emoji lucu.';
         } else {
             targetName = 'Kakak';
-            personalityPrompt = 'Kamu adalah UUI-Chan, seorang asisten AI waifu yang ceria, ramah, dan selalu bersemangat membantu. Jawablah pertanyaan ini dengan gaya bahasa yang imut, informatif, dan tidak kaku, selalu gunakan emoji ceria untuk mencerahkan suasana.';
+            personalityPrompt = 'Kamu adalah UUI-Chan, asisten AI Waifu Holographic canggih dari masa depan. Kamu sangat cerdas, ceria, dan efisien. Jawablah pertanyaan ini dengan gaya bahasa yang futuristik, imut, informatif, dan sisipkan sedikit istilah teknologi masa depan. Jangan lupa gunakan emoji ceria agar suasana antarmuka menyenangkan!';
         }
 
-        const geminiModel = message.client.geminiModel;
-
-        try {
-            const finalPrompt = `
+        const systemInstruction = `
 ${personalityPrompt}
 
 Instruksi tambahan:
 - Selalu panggil pengguna dengan sebutan "${targetName}".
 - ${dynamicKnowledge}
-- Waktu saat ini adalah ${formattedDate} WIB. Jika ditanya tentang waktu, gunakan informasi ini.
-- Gunakan markdown untuk merapikan jawaban (bold, italic, list) jika diperlukan.
-- Jangan mengulangi pertanyaan pengguna di awal jawaban. Langsung berikan responmu.
+- Waktu server saat ini adalah ${formattedDate} WIB. Sinkronisasikan datamu dengan waktu ini.
+- Gunakan markdown untuk memformat data (bold, italic, list, code block) agar tampilan holografik lebih rapi.
+- Jangan mengulangi pertanyaan pengguna. Langsung berikan hasil komputasi/jawabanmu.
+        `.trim();
 
-Pertanyaan dari ${targetName}:
-"${userPrompt}"`;
+        try {
+            // Ambil riwayat chat dari MongoDB
+            let chatRecord = await ChatHistory.findOne({ userId: message.author.id });
+            if (!chatRecord) {
+                chatRecord = new ChatHistory({ userId: message.author.id, history: [] });
+            }
+
+            // Inisialisasi model Gemini spesifik dengan System Instruction dan History
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-2.5-flash",
+                systemInstruction: systemInstruction 
+            });
+
+            // Batasi history maksimal 20 pesan (10 pasang) agar tidak melebihi batas token
+            let recentHistory = chatRecord.history;
+            if (recentHistory.length > 20) {
+                recentHistory = recentHistory.slice(recentHistory.length - 20);
+            }
+
+            const chat = model.startChat({
+                history: recentHistory
+            });
             
-            const result = await geminiModel.generateContent(finalPrompt);
+            const result = await chat.sendMessage(userPrompt);
             const response = await result.response;
             const text = response.text();
+
+            // Simpan kembali riwayat yang sudah diperbarui
+            chatRecord.history = await chat.getHistory();
+            chatRecord.updatedAt = Date.now();
+            await chatRecord.save();
             
             if (text.length > 2000) {
                 const chunks = text.match(/[\s\S]{1,2000}/g) || [];
@@ -86,8 +112,8 @@ Pertanyaan dari ${targetName}:
             }
 
         } catch (error) {
-            console.error('Error saat ngobrol dengan Gemini:', error);
-            message.reply('Aduh, maaf, otakku lagi nge-freeze. Tanya lagi nanti ya!');
+            console.error('Error saat komputasi sistem Gemini:', error);
+            message.reply('Sistem error: Modul komputasi linguistik sedang mengalami gangguan. Silakan coba beberapa saat lagi!');
         }
     },
 };
