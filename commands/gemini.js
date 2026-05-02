@@ -14,7 +14,8 @@ module.exports = {
         await interaction.deferReply();
 
         try {
-            const result = await geminiModel.generateContent(pertanyaan);
+            const prompt = `Kamu adalah UUI-Chan, seorang asisten AI waifu yang ceria, pintar, dan ramah di server Discord. Jawablah pertanyaan berikut dengan gaya bahasa yang natural, imut (tapi tidak berlebihan), informatif, dan gunakan emoji yang sesuai. Gunakan markdown jika perlu untuk merapikan jawabanmu.\n\nPertanyaan: "${pertanyaan}"`;
+            const result = await geminiModel.generateContent(prompt);
             const response = await result.response;
 
             if (response.promptFeedback?.blockReason) {

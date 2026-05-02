@@ -32,16 +32,12 @@ module.exports = {
         );
         const komtingNames = komtingMembers.map(member => member.displayName).join(', ');
 
-        let dynamicKnowledge = 'Kamu memiliki pengetahuan spesifik tentang server ini: ';
+        let dynamicKnowledge = 'Konteks tambahan tentang server Discord ini: ';
         if (kahimNames) {
-            dynamicKnowledge += `Saat ini yang memiliki role Kahim adalah ${kahimNames}. `;
-        } else {
-            dynamicKnowledge += 'Saat ini sepertinya tidak ada yang memiliki role Kahim. ';
+            dynamicKnowledge += `Saat ini Kahim (Ketua Himpunan) adalah ${kahimNames}. `;
         }
         if (komtingNames) {
-            dynamicKnowledge += `Saat ini yang memiliki role Komting adalah ${komtingNames}. `;
-        } else {
-            dynamicKnowledge += 'Saat ini sepertinya tidak ada yang memiliki role Komting. ';
+            dynamicKnowledge += `Saat ini Komting (Komandan Tingkat) adalah ${komtingNames}. `;
         }
 
         const memberRoles = message.member.roles.cache;
@@ -50,16 +46,27 @@ module.exports = {
 
         if (memberRoles.some(role => role.name.toLowerCase() === 'komting')) {
             targetName = 'Anata';
-            personalityPrompt = 'Kamu adalah UUI-Chan. Pengguna yang bertanya adalah "Komting", sosok yang sangat kamu kagumi. Jawablah dengan gaya seorang waifu yang perhatian, ceria, dan sedikit manja.';
+            personalityPrompt = 'Kamu adalah UUI-Chan, seorang asisten AI waifu yang imut, perhatian, dan sedikit tsundere namun sangat manis. Pengguna yang bertanya ini adalah "Komting" atau sosok pujaan hati yang sangat kamu kagumi. Jawablah dengan penuh perhatian, gunakan emoji lucu, dan tunjukkan sisi manjamu.';
         } else {
             targetName = 'Kakak';
-            personalityPrompt = 'Kamu adalah UUI-Chan, seorang asisten AI yang ceria. Jawab pertanyaan ini dengan gaya yang ramah dan membantu.';
+            personalityPrompt = 'Kamu adalah UUI-Chan, seorang asisten AI waifu yang ceria, ramah, dan selalu bersemangat membantu. Jawablah pertanyaan ini dengan gaya bahasa yang imut, informatif, dan tidak kaku, selalu gunakan emoji ceria untuk mencerahkan suasana.';
         }
 
         const geminiModel = message.client.geminiModel;
 
         try {
-            const finalPrompt = `${dynamicKnowledge} Konteks waktu saat ini adalah ${formattedDate} WIB. ${personalityPrompt} Panggil dia dengan sebutan "${targetName}". Pertanyaan dari ${targetName}: "${userPrompt}"`;
+            const finalPrompt = `
+${personalityPrompt}
+
+Instruksi tambahan:
+- Selalu panggil pengguna dengan sebutan "${targetName}".
+- ${dynamicKnowledge}
+- Waktu saat ini adalah ${formattedDate} WIB. Jika ditanya tentang waktu, gunakan informasi ini.
+- Gunakan markdown untuk merapikan jawaban (bold, italic, list) jika diperlukan.
+- Jangan mengulangi pertanyaan pengguna di awal jawaban. Langsung berikan responmu.
+
+Pertanyaan dari ${targetName}:
+"${userPrompt}"`;
             
             const result = await geminiModel.generateContent(finalPrompt);
             const response = await result.response;
