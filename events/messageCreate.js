@@ -3,6 +3,34 @@ const nameMappings = require('../data/nameMappings.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ChatHistory = require('../models/chatHistoryModel');
 
+// MIME types gambar yang didukung Gemini
+const SUPPORTED_IMAGE_TYPES = new Set([
+    'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/heic', 'image/heif'
+]);
+
+/**
+ * Download attachment dari Discord dan convert ke base64 untuk Gemini inlineData.
+ * @param {import('discord.js').Attachment} attachment
+ * @returns {Promise<{inlineData: {data: string, mimeType: string}} | null>}
+ */
+async function attachmentToInlineData(attachment) {
+    try {
+        const mimeType = attachment.contentType?.split(';')[0]; // ambil mime tanpa charset
+        if (!mimeType || !SUPPORTED_IMAGE_TYPES.has(mimeType)) return null;
+
+        const response = await fetch(attachment.url);
+        if (!response.ok) return null;
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+        return { inlineData: { data: base64, mimeType } };
+    } catch (err) {
+        console.error('Gagal download attachment:', err);
+        return null;
+    }
+}
+
 module.exports = {
     name: Events.MessageCreate,
     async execute(message) {
@@ -12,7 +40,16 @@ module.exports = {
         await message.channel.sendTyping();
 
         const userPrompt = message.content.replace(/<@!?\d+>/g, '').trim();
-        if (userPrompt.length === 0) {
+
+        // Cek apakah ada gambar yang dikirim
+        const imageAttachments = message.attachments.filter(
+            att => att.contentType && SUPPORTED_IMAGE_TYPES.has(att.contentType.split(';')[0])
+        );
+
+        const hasImages = imageAttachments.size > 0;
+
+        // Jika tidak ada teks DAN tidak ada gambar, tampilkan help
+        if (userPrompt.length === 0 && !hasImages) {
             return message.reply('Ada yang bisa UI-Chan bantu? Coba ketik `/help` untuk lihat semua perintahku ya!');
         }
 
@@ -63,6 +100,7 @@ Instruksi tambahan:
 - Waktu server saat ini adalah ${formattedDate} WIB. Sinkronisasikan datamu dengan waktu ini.
 - Gunakan markdown untuk memformat data (bold, italic, list, code block) agar tampilan holografik lebih rapi.
 - Jangan mengulangi pertanyaan pengguna. Langsung berikan hasil komputasi/jawabanmu.
+- Kamu memiliki kemampuan visual dan bisa memahami gambar yang dikirim pengguna. Jika ada gambar, analisis dan berikan respons yang relevan.
         `.trim();
 
         try {
@@ -88,13 +126,50 @@ Instruksi tambahan:
             const chat = model.startChat({
                 history: recentHistory
             });
-            
-            const result = await chat.sendMessage(userPrompt);
+
+            // Siapkan message parts untuk Gemini
+            let messageParts = [];
+
+            if (hasImages) {
+                // Download semua gambar dan convert ke inlineData
+                const imagePromises = imageAttachments.map(att => attachmentToInlineData(att));
+                const imageResults = await Promise.all(imagePromises);
+
+                // Tambahkan gambar yang berhasil di-download
+                for (const imgData of imageResults) {
+                    if (imgData) {
+                        messageParts.push(imgData);
+                    }
+                }
+
+                // Tambahkan teks prompt (atau default jika tidak ada teks)
+                const textPrompt = userPrompt.length > 0
+                    ? userPrompt
+                    : 'Tolong analisis dan jelaskan gambar ini.';
+                messageParts.push({ text: textPrompt });
+            } else {
+                // Teks saja tanpa gambar
+                messageParts.push({ text: userPrompt });
+            }
+
+            const result = await chat.sendMessage(messageParts);
             const response = await result.response;
             const text = response.text();
 
             // Simpan kembali riwayat yang sudah diperbarui
-            chatRecord.history = await chat.getHistory();
+            // Note: untuk pesan dengan gambar, history hanya menyimpan teks
+            // agar tidak membengkakkan ukuran database
+            const updatedHistory = await chat.getHistory();
+            
+            // Filter inline image data dari history sebelum simpan ke DB
+            const cleanHistory = updatedHistory.map(entry => ({
+                ...entry,
+                parts: entry.parts
+                    ? entry.parts.filter(part => !part.inlineData)
+                    : entry.parts
+            }));
+
+            chatRecord.history = cleanHistory;
             chatRecord.updatedAt = Date.now();
             await chatRecord.save();
             
